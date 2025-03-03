@@ -56,6 +56,7 @@ def scrape_midjourney():
     chrome_options.add_argument("--headless")  # 无头模式
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")  # 添加用户代理
     
     driver = None
     try:
@@ -76,8 +77,11 @@ def scrape_midjourney():
         # 使用Selenium打开网页
         driver.get(url)
 
-        # 等待页面加载
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        # 等待页面加载 - 增加等待时间并等待特定元素
+        logging.info("Waiting for page to load completely...")
+        # 尝试等待更具体的元素，比如图片容器或标题
+        WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        time.sleep(10)  # 额外等待时间以确保动态内容加载
         logging.info("Page loaded successfully")
 
         # 滚动页面以加载更多内容
@@ -98,9 +102,18 @@ def scrape_midjourney():
                 break
             last_height = new_height
 
-        # 找到所有预览图链接
+        # 找到所有预览图链接 - 尝试多种选择器
         logging.info("Finding image links...")
-        image_elements = driver.find_elements(By.XPATH, '//div[@class="absolute @container/jobCard group/jobCard overflow-hidden border-transparent"]//a[@class="block bg-cover bg-center w-full h-full bg-light-skeleton overflow-hidden dark:bg-dark-skeleton"]')
+        # 打印页面源码以便调试
+        logging.info(f"Page source length: {len(driver.page_source)}")
+        
+        # 尝试使用更简单的选择器
+        image_elements = driver.find_elements(By.XPATH, '//a[contains(@class, "bg-cover")]')
+        if len(image_elements) == 0:
+            # 如果第一个选择器失败，尝试更通用的选择器
+            logging.info("First selector failed, trying alternative...")
+            image_elements = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/imagine/"]')
+        
         logging.info(f"Found {len(image_elements)} image elements")
 
         image_links = []
