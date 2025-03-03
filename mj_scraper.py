@@ -220,7 +220,7 @@ def main():
             log_error("Failed to scrape after maximum retries")
         
         # 等待指定的时间间隔
-        interval = int(os.environ.get('SCRAPE_INTERVAL_SECONDS', '7200'))  # 默认2小时
+        interval = int(os.environ.get('SCRAPE_INTERVAL_SECONDS', '3600'))  # 默认2小时
         logging.info(f"Waiting for {interval} seconds before next run")
         time.sleep(interval)
 
