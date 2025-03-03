@@ -10,6 +10,7 @@ import logging
 import os
 import datetime
 import sys
+import random
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, 
@@ -57,6 +58,7 @@ def scrape_midjourney():
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")  # 添加用户代理
+    chrome_options.add_argument("--window-size=1920,1080")  # 设置更大的窗口尺寸
     
     driver = None
     try:
@@ -79,42 +81,73 @@ def scrape_midjourney():
 
         # 等待页面加载 - 增加等待时间并等待特定元素
         logging.info("Waiting for page to load completely...")
-        # 尝试等待更具体的元素，比如图片容器或标题
         WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
-        time.sleep(10)  # 额外等待时间以确保动态内容加载
+        time.sleep(15)  # 增加初始等待时间
         logging.info("Page loaded successfully")
-
-        # 滚动页面以加载更多内容
-        logging.info("Starting to scroll the page...")
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        scroll_count = 0
-        max_scrolls = 20  # 限制滚动次数，可根据需要调整
         
-        while scroll_count < max_scrolls:
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(3)  # 等待加载
-            new_height = driver.execute_script("return document.body.scrollHeight")
+        # 更自然的滚动页面以加载更多内容
+        logging.info("Starting to scroll the page...")
+        total_height = 0
+        scroll_count = 0
+        max_scrolls = 30  # 增加最大滚动次数
+        
+        # 滚动方式调整为更小增量的渐进式滚动
+        for scroll in range(max_scrolls):
+            # 随机滚动距离（200-500像素）
+            scroll_distance = random.randint(200, 500)
+            driver.execute_script(f"window.scrollBy(0, {scroll_distance});")
             scroll_count += 1
-            logging.info(f"Scroll {scroll_count}/{max_scrolls}, page height: {new_height}")
+            time.sleep(random.uniform(1.5, 3.0))  # 随机等待，更像人类行为
             
-            if new_height == last_height:
-                logging.info("Reached the end of the page")
-                break
-            last_height = new_height
-
+            # 每5次滚动后，暂停更长时间让内容完全加载
+            if scroll_count % 5 == 0:
+                logging.info(f"Extended pause after {scroll_count} scrolls to let content load...")
+                time.sleep(5)
+            
+            current_height = driver.execute_script("return document.body.scrollHeight")
+            total_height += scroll_distance
+            logging.info(f"Scroll {scroll_count}/{max_scrolls}, cumulative scroll: {total_height}px, page height: {current_height}")
+            
+            # 如果已经滚动到底部，等待一会儿再检查是否有新内容加载
+            if total_height >= current_height - 1000:
+                logging.info("Near the end of page, waiting for possible new content...")
+                time.sleep(7)
+                new_height = driver.execute_script("return document.body.scrollHeight")
+                
+                # 如果高度没有变化，尝试点击"加载更多"按钮（如果存在）
+                if new_height == current_height:
+                    try:
+                        load_more = driver.find_elements(By.XPATH, '//button[contains(text(), "Load") and contains(text(), "More")]')
+                        if load_more and len(load_more) > 0:
+                            logging.info("Found 'Load More' button, clicking...")
+                            load_more[0].click()
+                            time.sleep(5)
+                        else:
+                            logging.info("No 'Load More' button found, may have reached true end of content")
+                            break
+                    except Exception as e:
+                        logging.info(f"Error looking for 'Load More' button: {e}")
+                        break
+        
         # 找到所有预览图链接 - 尝试多种选择器
         logging.info("Finding image links...")
-        # 打印页面源码以便调试
         logging.info(f"Page source length: {len(driver.page_source)}")
         
-        # 尝试使用更简单的选择器
-        image_elements = driver.find_elements(By.XPATH, '//a[contains(@class, "bg-cover")]')
-        if len(image_elements) == 0:
-            # 如果第一个选择器失败，尝试更通用的选择器
-            logging.info("First selector failed, trying alternative...")
-            image_elements = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/imagine/"]')
+        # 尝试多种选择器
+        selectors = [
+            (By.XPATH, '//a[contains(@class, "bg-cover")]'),
+            (By.CSS_SELECTOR, 'a[href*="/jobs/"]'),
+            (By.CSS_SELECTOR, 'a[href*="/imagine/"]'),
+            (By.XPATH, '//a[contains(@href, "/jobs/")]')
+        ]
         
-        logging.info(f"Found {len(image_elements)} image elements")
+        image_elements = []
+        for selector_type, selector in selectors:
+            if len(image_elements) == 0:
+                image_elements = driver.find_elements(selector_type, selector)
+                logging.info(f"Tried selector: {selector}, found {len(image_elements)} elements")
+        
+        logging.info(f"Found {len(image_elements)} image elements total")
 
         image_links = []
         for index, image_element in enumerate(image_elements):
