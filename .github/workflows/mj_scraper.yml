@@ -3,7 +3,6 @@ name: MidJourney Scraper
 on:
   schedule:
     - cron: "0 * * * *" # 每小时整点运行一次
-    - cron: "0 17 * * *" # 每天UTC 17:00 (北京时间凌晨1:00) 运行文件处理
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -13,13 +12,10 @@ jobs:
     env:
       OUTPUT_FOLDER: "./output/mj-linkdoc"
       LOG_FOLDER: "./logs"
-      INPUT_DIR: "./output/mj-linkdoc"
-      OUTPUT_DIR: "./output/mj-linkdoc-output"
-      JSON_OUTPUT_DIR: "./output/mj-linkdoc-json"
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -36,12 +32,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install selenium webdriver-manager
 
-      - name: Run scraper (single mode)
-        run: python mj_scraper.py --single
-
-      - name: Run file processor
-        if: github.event.schedule == '0 17 * * *' # 只在凌晨1点的定时任务中运行
-        run: python mj_refile.py
+      - name: Run scraper
+        run: python mj_scraper.py
 
       - name: Configure Git
         run: |
