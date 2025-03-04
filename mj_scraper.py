@@ -184,45 +184,10 @@ def scrape_midjourney():
             logging.info("WebDriver closed")
 
 def main():
-    # 检查是否需要单次运行模式
-    single_run = False
-    if len(sys.argv) > 1 and sys.argv[1] == "--single":
-        single_run = True
-    
-    # 单次运行模式
-    if single_run:
-        logging.info("Running in single-run mode")
-        success = scrape_midjourney()
-        sys.exit(0 if success else 1)
-    
-    # 循环运行模式
-    logging.info("Running in continuous mode")
-    while True:
-        max_retries = 3
-        success = False
-        
-        for attempt in range(max_retries):
-            logging.info(f"Attempt {attempt + 1}/{max_retries}")
-            try:
-                success = scrape_midjourney()
-                if success:
-                    logging.info("Scraping successful")
-                    break
-                else:
-                    logging.warning(f"Attempt {attempt + 1} failed, retrying...")
-                    time.sleep(120)  # 等待2分钟再重试
-            except Exception as e:
-                logging.error(f"Unexpected error in attempt {attempt + 1}: {e}")
-                time.sleep(120)
-        
-        if not success:
-            logging.error("All attempts failed")
-            log_error("Failed to scrape after maximum retries")
-        
-        # 等待指定的时间间隔
-        interval = int(os.environ.get('SCRAPE_INTERVAL_SECONDS', '3600'))  # 默认2小时
-        logging.info(f"Waiting for {interval} seconds before next run")
-        time.sleep(interval)
+    # 只保留单次运行的逻辑
+    logging.info("Running in single mode")
+    success = scrape_midjourney()
+    sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
     main()
