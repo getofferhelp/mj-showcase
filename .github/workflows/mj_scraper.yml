@@ -2,7 +2,7 @@ name: MidJourney Scraper
 
 on:
   schedule:
-    - cron: "0 */2 * * *" # 每2小时运行一次（0:00, 2:00, 4:00, ...)
+    - cron: "0 * * * *" # 每小时整点运行一次
   workflow_dispatch: # 允许手动触发
 
 jobs:
