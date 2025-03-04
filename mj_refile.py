@@ -113,9 +113,18 @@ class MJFileProcessor:
             self.random_delay()
 
     def output_json_file(self, unique_links):
-        """输出JSON文件"""
-        date_str = self.get_yesterday_compact()
-        json_file = Path(self.json_output_dir) / f"midjourney_links_{date_str}.json"
+        """输出JSON文件，按月/日组织文件夹结构"""
+        yesterday = datetime.now() - timedelta(days=1)
+        month_folder = yesterday.strftime('%m')  # 获取月份（01-12）
+        day_folder = yesterday.strftime('%d')    # 获取日期（01-31）
+        date_str = yesterday.strftime('%Y%m%d')  # 用于文件名
+
+        # 构建完整的输出路径：json_output_dir/月/日/
+        json_folder = Path(self.json_output_dir) / month_folder / day_folder
+        json_folder.mkdir(parents=True, exist_ok=True)
+
+        # JSON文件路径
+        json_file = json_folder / f"midjourney_links_{date_str}.json"
 
         json_data = {
             'date': self.get_yesterday_date(),
