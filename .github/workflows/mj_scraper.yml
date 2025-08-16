@@ -33,7 +33,7 @@ jobs:
           pip install selenium webdriver-manager
 
       - name: Run scraper
-        run: python mj_scraper.py
+        run: python 001_mj_scraper.py
 
       - name: Configure Git
         run: |

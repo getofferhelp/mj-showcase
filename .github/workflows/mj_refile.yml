@@ -24,7 +24,7 @@ jobs:
           python-version: "3.10"
 
       - name: Run file processor
-        run: python mj_refile.py
+        run: python 002_mj_processor.py
 
       - name: Configure Git
         run: |
